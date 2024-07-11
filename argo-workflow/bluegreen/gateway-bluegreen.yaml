@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: myapp-gateway
+  namespace: green
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      name: https
+      number: 8443
+      protocol: HTTPS
+    hosts:
+    - flask.app-georgij.com
+    tls:
+      mode: SIMPLE
+      credentialName: demo-cert-tls

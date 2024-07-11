@@ -1,0 +1,187 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: deployment-types
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+
+      - name: deploy-canary
+        template: suspend
+
+      - name: deploy-bluegreen
+        template: suspend
+
+      - name: canary-deployment
+        template: canary
+        dependencies: [deploy-canary]
+
+      - name: deploy-v2
+        template: suspend
+        dependencies: [canary-deployment]
+
+      - name: v2-deployment
+        template: v2deployment
+        dependencies: [deploy-v2]
+
+      - name: bluegreen-deployment
+        template: bluegreen
+        dependencies: [deploy-bluegreen]
+
+      - name: delete-blue-version
+        template: suspend
+        dependencies: [bluegreen-deployment]
+
+      - name: delete-blue
+        template: greenblue
+        dependencies: [delete-blue-version]
+
+  - name: suspend
+    suspend: {}
+
+  - name: canary
+    inputs:
+      artifacts:
+      - name: helm-chart
+        path: /src
+        git:
+          repo: https://github.com/George-Mikulich/apps
+          revision: "main"
+    container:
+      image: alpine/git:2.40.1
+      workingDir: /src
+      command:
+      - sh
+      - -c
+      - |
+        git checkout main
+        sed -i 's/previous/canary/' flask-app/templates/virtualService.yaml
+        rm flask-app/templates/deployment.yaml
+        cp argo-workflow/deployment-mix.yaml flask-app/templates/deployment.yaml
+        git config --global user.email "g.mikulich@softteco.com"
+        git config --global user.name "$USER"
+        git add .
+        git commit -m 'canary deployment'
+        git push https://$USER:$TOKEN@github.com/George-Mikulich/apps.git main
+      env:
+      - name: USER
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: username
+      - name: TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: password
+
+
+  - name: bluegreen
+    inputs:
+      artifacts:
+      - name: helm-chart
+        path: /src
+        git:
+          repo: https://github.com/George-Mikulich/apps
+          revision: "main"
+    container:
+      image: alpine/git:2.40.1
+      workingDir: /src
+      command:
+      - sh
+      - -c
+      - |
+        git checkout main
+        cp -R argo-workflow/bluegreen/* flask-app/templates
+        sed -i 's/flask.app-georgij.com/flask2.app-georgij.com/' flask-app/templates/virtualService.yaml
+        sed -i 's/flask.app-georgij.com/flask2.app-georgij.com/' flask-app/templates/gateway.yaml
+        git config --global user.email "g.mikulich@softteco.com"
+        git config --global user.name "$USER"
+        git add .
+        git commit -m 'bluegreen deployment'
+        git push https://$USER:$TOKEN@github.com/George-Mikulich/apps.git main
+      env:
+      - name: USER
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: username
+      - name: TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: password
+
+  - name: greenblue
+    inputs:
+      artifacts:
+      - name: helm-chart
+        path: /src
+        git:
+          repo: https://github.com/George-Mikulich/apps
+          revision: "main"
+    container:
+      image: alpine/git:2.40.1
+      workingDir: /src
+      command:
+      - sh
+      - -c
+      - |
+        git checkout main
+        rm flask-app/templates/deployment.yaml flask-app/templates/destRule.yaml flask-app/templates/gateway.yaml flask-app/templates/service.yaml flask-app/templates/virtualService.yaml
+        git config --global user.email "g.mikulich@softteco.com"
+        git config --global user.name "$USER"
+        git add .
+        git commit -m 'delete blue version deployment'
+        git push https://$USER:$TOKEN@github.com/George-Mikulich/apps.git main
+      env:
+      - name: USER
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: username
+      - name: TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: password
+
+
+  - name: v2deployment
+    inputs:
+      artifacts:
+      - name: helm-chart
+        path: /src
+        git:
+          repo: https://github.com/George-Mikulich/apps
+          revision: "main"
+    container:
+      image: alpine/git:2.40.1
+      workingDir: /src
+      command:
+      - sh
+      - -c
+      - |
+        git checkout main
+        sed -i 's/canary/bluegreen/g' flask-app/templates/virtualService.yaml
+        rm flask-app/templates/deployment.yaml
+        cp argo-workflow/deploymentv2.yaml flask-app/templates/deployment.yaml
+        git config --global user.email "g.mikulich@softteco.com"
+        git config --global user.name "$USER"
+        git add .
+        git commit -m 'version 2 canary deployment'
+        git push https://$USER:$TOKEN@github.com/George-Mikulich/apps.git main
+      env:
+      - name: USER
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: username
+      - name: TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: github-auth
+            key: password

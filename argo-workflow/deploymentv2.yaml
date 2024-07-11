@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appLabel }}-v2
+  labels:
+    app: {{ .Values.appLabel }}
+    version: v2
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: {{ .Values.appLabel }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appLabel }}
+        istio-injection: "true"
+        version: v2
+    spec:
+      serviceAccountName: useless-thing
+      containers:
+      - image: {{ .Values.image.registry }}/{{ .Values.image.username }}/{{ .Values.image.repo }}:{{ .Values.image.tag2 }}
+        name: {{ .Values.appLabel }}
+        ports:
+        - containerPort: {{ .Values.containerPort }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: useless-thing
+  labels:
+    account: {{ .Values.appLabel }}

@@ -1,0 +1,26 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: flask-app
+spec:
+  hosts:
+  - flask.app-georgij.com
+  gateways:
+  - myapp-gateway
+  http:
+  - match:
+    - uri:
+        exact: /
+    route:
+    - destination:
+        host: flask-app.default.svc.cluster.local
+        subset: v1
+        port:
+          number: {{ .Values.service.port }}
+      weight: {{ .Values.virtualService.weights.previous.version1 }}
+    - destination:
+        host: flask-app.default.svc.cluster.local
+        subset: v2
+        port:
+          number: {{ .Values.service.port }}
+      weight: {{ .Values.virtualService.weights.previous.version2 }}

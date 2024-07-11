@@ -1,0 +1,46 @@
+# API Reference: https://marketplace.upbound.io/providers/upbound/provider-gcp-container/v0.41.0/resources/container.gcp.upbound.io/Cluster/v1beta1
+apiVersion: container.gcp.upbound.io/v1beta1
+kind: Cluster
+metadata:
+  name: gke-crossplane-cluster
+spec:
+  forProvider:
+    initialNodeCount: 1
+    removeDefaultNodePool: true
+    location: us-west1-c
+    network: "https://www.googleapis.com/compute/v1/projects/my-beautiful-cluster2/global/networks/default-my-beautiful-cluster2-vpc"
+    subnetwork: "https://www.googleapis.com/compute/v1/projects/my-beautiful-cluster2/regions/us-west1/subnetworks/default-my-beautiful-cluster2-subnet"
+    ipAllocationPolicy:
+      - {}
+
+---
+
+# API Reference: https://marketplace.upbound.io/providers/upbound/provider-gcp-container/v0.41.0/resources/container.gcp.upbound.io/NodePool/v1beta1
+# API Reference2: https://doc.crds.dev/github.com/crossplane/provider-gcp/container.gcp.crossplane.io/NodePool/v1alpha1@v0.15.0
+apiVersion: container.gcp.upbound.io/v1beta1
+kind: NodePool
+metadata:
+  name: gke-crossplane-np
+spec:
+  forProvider: 
+    clusterRef:
+      name: gke-crossplane-cluster
+    location: us-west1-c
+    nodeCount: 2
+    nodeConfig:
+      - machineType: e2-standard-2
+        oauthScopes:
+          - "https://www.googleapis.com/auth/logging.write"
+          - "https://www.googleapis.com/auth/monitoring"
+        labels:
+          project: my-beautiful-cluster2
+          creator: crossplane
+        
+        tags:
+          - "gke-node"
+          - "crossplane-managed"
+        metadata:
+          disable-legacy-endpoints: "true"
+        diskSizeGb: 50
+    networkConfig:
+      - enablePrivateNodes: true
