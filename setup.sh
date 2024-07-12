@@ -39,18 +39,40 @@ do
 done
 echo "------------------------------------------------"
 
-kubectl apply -f ./crossplane/provider.yaml
+echo "Installing external secret operator"
+helm repo add external-secrets \
+    https://charts.external-secrets.io
 
+helm repo update
 
-echo "Credentials are needed for crossplane to connect to google cloud."
+helm upgrade --install \
+    external-secrets \
+    external-secrets/external-secrets \
+    --namespace external-secrets \
+    --create-namespace
+
+echo "waiting for external-secrets pods deployment..."
+for (( ; ; ))
+do
+        sleep 1
+        allPods=$(kubectl get pods -n external-secrets --no-headers | wc -l)
+        runningPods=$(kubectl get pods -n external-secrets --no-headers | grep -P "(\d+)\/\1\s+Running" | wc -l)
+        if [ $allPods == $runningPods ]
+        then
+                echo "ESO is ready"
+                break
+        fi
+done
+
+echo "Credentials are needed for external secrets (all other secrets will be managed by ESO)"
 for (( createSecretErrorCode=1; $createSecretErrorCode != 0 ; ))
 do
         echo "Please specify full path to Service Account key (.json file)"
-        read -r -p '(Default path is ../gcp-credentials.json): ' answer
-        fpath="${answer:-../gcp-credentials.json}"
+        read -r -p '(Default path is ../key.json): ' answer
+        fpath="${answer:-../key.json}"
         kubectl create secret \
         generic gcp-secret \
-        -n crossplane-system \
+        -n external-secrets \
         --from-file=creds=fpath
         createSecretErrorCode=$?
         if [ $createSecretErrorCode != 0 ]
@@ -59,20 +81,16 @@ do
                 echo
         fi
 done
-echo "------------------------------------------------"
 
-echo "Installing external secret operator"
-helm repo add external-secrets https://charts.external-secrets.io
-
-helm install external-secrets \
-   external-secrets/external-secrets \
-    -n external-secrets \
-    --create-namespace
-
-
+sleep 3
+kubectl apply -f external-secrets-operator/secret-store.yaml
+sleep 3
+kubectl apply -f external-secrets-operator/external-secret.yaml \ 
+      -n crossplane-system
 
 
 echo "------------------------------------------------"
+kubectl apply -f ./crossplane/provider.yaml
 echo "installing crds..."
 for (( ; ; ))
 do

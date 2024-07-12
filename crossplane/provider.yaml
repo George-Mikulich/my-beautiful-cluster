@@ -31,3 +31,12 @@ metadata:
   name: provider-gcp-secretmanager
 spec:
   package: xpkg.upbound.io/upbound/provider-gcp-secretmanager:v0.41.0
+
+---
+
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gcp-dns
+spec:
+  package: xpkg.upbound.io/upbound/provider-gcp-dns:v0.41.0
