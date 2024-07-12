@@ -41,10 +41,36 @@ echo "------------------------------------------------"
 
 kubectl apply -f ./crossplane/provider.yaml
 
-kubectl create secret \
-generic gcp-secret \
--n crossplane-system \
---from-file=creds=../gcp-credentials.json
+
+echo "Credentials are needed for crossplane to connect to google cloud."
+for (( createSecretErrorCode=1; $createSecretErrorCode != 0 ; ))
+do
+        echo "Please specify full path to Service Account key (.json file)"
+        read -r -p '(Default path is ../gcp-credentials.json): ' answer
+        fpath="${answer:-../gcp-credentials.json}"
+        kubectl create secret \
+        generic gcp-secret \
+        -n crossplane-system \
+        --from-file=creds=fpath
+        createSecretErrorCode=$?
+        if [ $createSecretErrorCode != 0 ]
+        then
+                echo "There is no such file, try again"
+                echo
+        fi
+done
+echo "------------------------------------------------"
+
+echo "Installing external secret operator"
+helm repo add external-secrets https://charts.external-secrets.io
+
+helm install external-secrets \
+   external-secrets/external-secrets \
+    -n external-secrets \
+    --create-namespace
+
+
+
 
 echo "------------------------------------------------"
 echo "installing crds..."
@@ -52,7 +78,7 @@ for (( ; ; ))
 do
         sleep 1
         healthyProviders=$(kubectl describe provider | grep "Status:                True" | wc -l)
-        if [ $healthyProviders == 8 ] # 4 for type:installed and 4 for type:healthy
+        if [ $healthyProviders == 10 ] # 5 for type:installed and 5 for type:healthy
         then
                 echo "all providers are healthy, crds are installed"
                 break
@@ -100,3 +126,13 @@ do
                 break
         fi
 done
+echo "------------------------------------------------"
+echo "deploying apps through argocd"
+helm install argocd-apps \
+--namespace argocd \
+argo/argocd-apps \
+--version 2.0.0 \
+--values argocd/app_of_apps.yaml
+
+
+
