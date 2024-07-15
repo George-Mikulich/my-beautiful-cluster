@@ -85,8 +85,7 @@ done
 sleep 3
 kubectl apply -f external-secrets-operator/secret-store.yaml
 sleep 3
-kubectl apply -f external-secrets-operator/external-secret.yaml \ 
-      -n crossplane-system
+kubectl apply -f external-secrets-operator/external-secret.yaml -n crossplane-system
 
 
 echo "------------------------------------------------"
