@@ -73,7 +73,7 @@ do
         kubectl create secret \
         generic gcp-secret \
         -n external-secrets \
-        --from-file=creds=fpath
+        --from-file=creds=$fpath
         createSecretErrorCode=$?
         if [ $createSecretErrorCode != 0 ]
         then
