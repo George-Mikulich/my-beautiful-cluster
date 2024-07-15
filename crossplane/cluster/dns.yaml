@@ -1,0 +1,39 @@
+apiVersion: dns.gcp.upbound.io/v1beta1
+kind: ManagedZone
+metadata:
+  name: managed-zone-app-george
+spec:
+  forProvider:
+    description: Example DNS zone
+    dnsName: app-george.com.
+    visibility: public
+
+---
+#https://marketplace.upbound.io/providers/upbound/provider-gcp-dns/v1.5.0/resources/dns.gcp.upbound.io/RecordSet/v1beta1
+apiVersion: dns.gcp.upbound.io/v1beta1
+kind: RecordSet
+metadata:
+  name: a-record-argocd
+spec:
+  forProvider:
+    managedZone: managed-zone-app-george
+    name: argocd.app-george.com.
+    rrdatas:
+      - 35.247.14.44
+    ttl: 300
+    type: A
+
+
+#https://marketplace.upbound.io/providers/upbound/provider-gcp-dns/v1.5.0/resources/dns.gcp.upbound.io/RecordSet/v1beta1
+apiVersion: dns.gcp.upbound.io/v1beta1
+kind: RecordSet
+metadata:
+  name: a-record-myapp
+spec:
+  forProvider:
+    managedZone: managed-zone-app-george
+    name: my.app-george.com.
+    rrdatas:
+      - 35.247.14.44
+    ttl: 300
+    type: A

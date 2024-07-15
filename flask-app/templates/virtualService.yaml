@@ -4,9 +4,9 @@ metadata:
   name: flask-app
 spec:
   hosts:
-  - flask.app-georgij.com
+  - my.app-george.com
   gateways:
-  - myapp-gateway
+  - istio-system/myapp-gateway
   http:
   - match:
     - uri:

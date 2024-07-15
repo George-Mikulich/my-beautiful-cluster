@@ -2,8 +2,8 @@
 
 
 # possible issues:
-# - folders order
-# - service account (it was created manually)
+# - export fullpath variable
+# - cert.yaml file: 2 dns names
 #
 # TODO:
 # provide credentials in file gcp-credentials.json
@@ -45,7 +45,7 @@ helm repo add external-secrets \
 
 helm repo update
 
-helm upgrade --install \
+helm install \
     external-secrets \
     external-secrets/external-secrets \
     --namespace external-secrets \
@@ -69,11 +69,11 @@ for (( createSecretErrorCode=1; $createSecretErrorCode != 0 ; ))
 do
         echo "Please specify full path to Service Account key (.json file)"
         read -r -p '(Default path is ../key.json): ' answer
-        fpath="${answer:-../key.json}"
+        export fullpath="${answer:-../key.json}"
         kubectl create secret \
         generic gcp-secret \
         -n external-secrets \
-        --from-file=creds=$fpath
+        --from-file=creds=$fullpath
         createSecretErrorCode=$?
         if [ $createSecretErrorCode != 0 ]
         then
@@ -85,7 +85,7 @@ done
 sleep 3
 kubectl apply -f external-secrets-operator/secret-store.yaml
 sleep 3
-kubectl apply -f external-secrets-operator/external-secret.yaml -n crossplane-system
+kubectl apply -f external-secrets-operator/crossplane-key.yaml -n crossplane-system
 
 
 echo "------------------------------------------------"
@@ -121,11 +121,50 @@ do
 done
 
 echo "------------------------------------------------"
+echo "creating DNS zone and A record"
+kubectl apply -f crossplane/cluster/dns.yaml
+
+echo "------------------------------------------------"
 echo "writing cluster endpoint to local kubeconfig file"
 gcloud container clusters get-credentials gke-crossplane-cluster --zone us-west1-c
 sleep 5
 echo "------------------------------------------------"
 echo "now setting up crossplane-created cluster:"
+
+echo "Installing external secret operator"
+helm repo add external-secrets \
+    https://charts.external-secrets.io
+
+helm repo update
+
+helm install \
+    external-secrets \
+    external-secrets/external-secrets \
+    --namespace external-secrets \
+    --create-namespace
+
+kubectl create secret \
+        generic gcp-secret \
+        -n external-secrets \
+        --from-file=creds=$fullpath
+
+echo "waiting for external-secrets pods deployment..."
+for (( ; ; ))
+do
+        sleep 1
+        allPods=$(kubectl get pods -n external-secrets --no-headers | wc -l)
+        runningPods=$(kubectl get pods -n external-secrets --no-headers | grep -P "(\d+)\/\1\s+Running" | wc -l)
+        if [ $allPods == $runningPods ]
+        then
+                echo "ESO is ready"
+                break
+        fi
+done
+
+kubectl apply -f external-secrets-operator/secret-store.yaml
+sleep 3
+kubectl apply -f external-secrets-operator/dns-solver-key.yaml -n cert-manager
+echo "------------------------------------------------"
 echo "installing argocd"
 helm repo add argo https://argoproj.github.io/argo-helm
 helm install argocd \
@@ -150,6 +189,28 @@ helm install argocd-apps \
 argo/argocd-apps \
 --version 2.0.0 \
 --values argocd/app_of_apps.yaml
+echo "------------------------------------------------"
+echo "installing cert-manager"
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.15.1 \
+  --set crds.enabled=true
+echo "waiting for cert-manager pods deployment..."
+for (( ; ; ))
+do
+        sleep 1
+        allPods=$(kubectl get pods -n cert-manager --no-headers | wc -l)
+        runningPods=$(kubectl get pods -n cert-manager --no-headers | grep -P "(\d+)\/\1\s+Running" | wc -l)
+        if [ $allPods == $runningPods ]
+        then
+                echo "cert-manager is ready"
+                break
+        fi
+done
 
-
-
+kubectl apply -f cert-manager/CIssuer.yaml
+kubectl apply -f cert-manager/cert.yaml
+echo "------------------------------------------------"

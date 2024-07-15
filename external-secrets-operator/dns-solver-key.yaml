@@ -1,0 +1,16 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: dns-solver-sa-key
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: gcp
+    kind: ClusterSecretStore
+  target:
+    name: dns-solver-sa
+    creationPolicy: Owner
+  data:
+  - secretKey: key.json
+    remoteRef:
+      key: dns-solver-sa-key

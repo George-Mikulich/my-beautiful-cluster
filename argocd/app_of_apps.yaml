@@ -4,7 +4,7 @@ applications:
     namespace: argocd
     project: default
     source:
-      repoURL: https://github.com/George-Mikulich/apps
+      repoURL: https://github.com/George-Mikulich/my-beautiful-cluster
       targetRevision: HEAD
       path: apps
     destination:
