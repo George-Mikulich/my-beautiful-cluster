@@ -23,6 +23,4 @@ spec:
     - argocd.app-george.com
     tls:
       credentialName: app-george-tls
-      maxProtocolVersion: TLSV1_3
-      minProtocolVersion: TLSV1_2
       mode: SIMPLE
