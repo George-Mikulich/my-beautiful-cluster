@@ -3,7 +3,8 @@
 
 # possible issues:
 # - export fullpath variable
-# - cert.yaml file: 2 dns names
+# - argocd-cm configmap patched manually
+# - maybe i need to specify argocd-cm settings while installing helm chart
 #
 # TODO:
 # provide credentials in file gcp-credentials.json
@@ -171,6 +172,7 @@ helm install argocd \
 --namespace argocd \
 --create-namespace argo/argo-cd \
 --version 7.1.1
+
 echo "waiting for argocd-server deployment"
 for (( ; ; ))
 do
@@ -182,6 +184,15 @@ do
                 break
         fi
 done
+
+kubectl apply -f argocd/custom-cm.yaml #-------this (what i could do: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml)
+echo "you need to edit deployment manually."
+echo "Add --insecure flag spec.template.spec.containers.args"
+echo "It should look like this:"
+echo "containers: \n- args: \n - /usr/local/bin/argocd-server \n  - --port=8080 \n  - --metrics-port=8083 \n  - --insecure"
+echo "sorry, there is no better way so far"
+read -n1 -r -p "Press any key if you are ready..." key
+kubectl edit deployment argocd-server -n argocd -o yaml
 echo "------------------------------------------------"
 echo "deploying apps through argocd"
 helm install argocd-apps \
@@ -214,3 +225,6 @@ done
 kubectl apply -f cert-manager/CIssuer.yaml
 kubectl apply -f cert-manager/cert.yaml
 echo "------------------------------------------------"
+
+#ip addr of ingress:
+# export INGRESS_HOST=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')

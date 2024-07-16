@@ -37,3 +37,18 @@ spec:
       - 34.19.6.180
     ttl: 300
     type: A
+
+---
+
+apiVersion: dns.gcp.upbound.io/v1beta1
+kind: RecordSet
+metadata:
+  name: a-record-kiali
+spec:
+  forProvider:
+    managedZone: managed-zone-app-george
+    name: kiali.app-george.com.
+    rrdatas:
+      - 34.19.6.180
+    ttl: 300
+    type: A

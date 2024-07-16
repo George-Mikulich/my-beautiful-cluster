@@ -1,0 +1,34 @@
+# YES I KNOW THERE IS A SECRET BUT IT IS USELESS
+
+apiVersion: v1
+data:
+  admin.enabled: "true"
+  application.instanceLabelKey: argocd.argoproj.io/instance
+  exec.enabled: "false"
+  oidc.config: |
+    name: Okta
+    issuer: https://trial-5671870.okta.com/oauth2/ausgsolg9wa3THmhe697
+    clientID: 0oagso94b8OMseI82697
+    clientSecret: DU-8uZfX7IqPJ8yAMuIHJgo9nLoa_Swfv6r2WAPIl92H0QzLyJudfouHd0rTIWiK
+    requestedScopes: ["openid", "profile", "email", "groups"]
+    requestedIDTokenClaims: {"groups": {"essential": true}}
+  server.rbac.log.enforce.enable: "false"
+  statusbadge.enabled: "false"
+  timeout.hard.reconciliation: 0s
+  timeout.reconciliation: 180s
+  url: https://argocd.app-george.com
+kind: ConfigMap
+metadata:
+  annotations:
+    meta.helm.sh/release-name: argocd
+    meta.helm.sh/release-namespace: argocd
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/instance: argocd
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/version: v2.11.2
+    helm.sh/chart: argo-cd-7.1.1
+  name: argocd-cm
+  namespace: argocd

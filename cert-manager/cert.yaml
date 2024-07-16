@@ -11,3 +11,4 @@ spec:
   dnsNames:
   - argocd.app-george.com
   - my.app-george.com
+  - kiali.app-george.com
