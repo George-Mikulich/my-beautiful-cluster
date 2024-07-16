@@ -1,10 +1,11 @@
 #!/bin/bash
 
 
-# possible issues:
+# possible issues & weakpoints:
 # - export fullpath variable
 # - argocd-cm configmap patched manually
 # - maybe i need to specify argocd-cm settings while installing helm chart
+# - if ingress_host variable is empty, sed will set ip address to empty line and regex will be useless
 #
 # TODO:
 # provide credentials in file gcp-credentials.json
@@ -122,10 +123,6 @@ do
 done
 
 echo "------------------------------------------------"
-echo "creating DNS zone and A record"
-kubectl apply -f crossplane/cluster/dns.yaml
-
-echo "------------------------------------------------"
 echo "writing cluster endpoint to local kubeconfig file"
 gcloud container clusters get-credentials gke-crossplane-cluster --zone us-west1-c
 sleep 5
@@ -225,6 +222,14 @@ done
 kubectl apply -f cert-manager/CIssuer.yaml
 kubectl apply -f cert-manager/cert.yaml
 echo "------------------------------------------------"
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "To create DNS records we need Istio Ingress address, so we couldn't have done it earlier"
+gcloud container clusters get-credentials default-my-beautiful-cluster2-gke --zone us-west1-c
+sleep 5
+echo "IP address of Ingress: ${INGRESS_HOST}"
+echo "creating DNS zone and A records"
+sed -i "s/[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*/${INGRESS_HOST}/" crossplane/cluster/dns.yaml
+kubectl apply -f crossplane/cluster/dns.yaml
+echo "------------------------------------------------"
 
-#ip addr of ingress:
-# export INGRESS_HOST=$(kubectl -n "$INGRESS_NS" get service "$INGRESS_NAME" -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+#ends with credentials on terraform-managed cluster
