@@ -160,6 +160,7 @@ do
 done
 
 kubectl apply -f external-secrets-operator/secret-store.yaml
+kubectl create namespace cert-manager
 sleep 3
 kubectl apply -f external-secrets-operator/dns-solver-key.yaml -n cert-manager
 echo "------------------------------------------------"
@@ -186,7 +187,12 @@ kubectl apply -f argocd/custom-cm.yaml #-------this (what i could do: https://gi
 echo "you need to edit deployment manually."
 echo "Add --insecure flag spec.template.spec.containers.args"
 echo "It should look like this:"
-echo "containers: \n- args: \n - /usr/local/bin/argocd-server \n  - --port=8080 \n  - --metrics-port=8083 \n  - --insecure"
+echo "containers: 
+- args: 
+  - /usr/local/bin/argocd-server 
+  - --port=8080 
+  - --metrics-port=8083 
+  - --insecure"
 echo "sorry, there is no better way so far"
 read -n1 -r -p "Press any key if you are ready..." key
 kubectl edit deployment argocd-server -n argocd -o yaml
@@ -203,7 +209,6 @@ helm repo add jetstack https://charts.jetstack.io --force-update
 helm install \
   cert-manager jetstack/cert-manager \
   --namespace cert-manager \
-  --create-namespace \
   --version v1.15.1 \
   --set crds.enabled=true
 echo "waiting for cert-manager pods deployment..."
@@ -221,7 +226,24 @@ done
 
 kubectl apply -f cert-manager/CIssuer.yaml
 kubectl apply -f cert-manager/cert.yaml
+
+kubectl apply -f argocd/gateway.yaml  #beautify????
+kubectl apply -f argocd/vS.yaml
+kubectl apply -f kiali/gateway.yaml
+kubectl apply -f kiali/vS.yaml
 echo "------------------------------------------------"
+echo "waiting for istio ingress"
+for (( ; ; ))
+do
+        sleep 1
+        ingressIsRunning=$(kubectl get pods -n istio-system -l istio=ingressgateway --field-selector=status.phase=Running --no-headers | wc -l)
+        if [ $ingressIsRunning == 1 ]
+        then
+                echo "Istio Ingress Gateway is ready"
+                break
+        fi
+done
+#?
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 echo "To create DNS records we need Istio Ingress address, so we couldn't have done it earlier"
 gcloud container clusters get-credentials default-my-beautiful-cluster2-gke --zone us-west1-c
