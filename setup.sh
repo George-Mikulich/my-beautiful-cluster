@@ -232,6 +232,28 @@ kubectl apply -f argocd/vS.yaml
 kubectl apply -f kiali/gateway.yaml
 kubectl apply -f kiali/vS.yaml
 echo "------------------------------------------------"
+# database (PG) operator
+helm install pgo oci://registry.developers.crunchydata.com/crunchydata/pgo \
+ -n postgres-operator \
+ --create-namespace
+kubectl apply -f crunchy/cluster.yaml
+
+# For UI
+#
+# read -r -p 'Create password for user hippo@example.com (default is admin): ' answer
+# export PG_USER_PASSWORD="${answer:-admin}"
+# kubectl create secret generic pgadmin-password-secret \
+#   -n postgres-operator \
+#   --from-literal=password=$PG_USER_PASSWORD
+# kubectl apply -f crunchy/admin.yaml
+
+kubectl apply -f crunchy/custom-psql-svc.yaml -n postgres-operator
+
+PGPASSWORD=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.password | base64decode}}')
+kubectl create secret generic db-creds \
+ --from-literal=user=hippo \
+ --from-literal=password="$PGPASSWORD"
+echo "------------------------------------------------"
 echo "waiting for istio ingress"
 for (( ; ; ))
 do
@@ -255,3 +277,11 @@ kubectl apply -f crossplane/cluster/dns.yaml
 echo "------------------------------------------------"
 
 #ends with credentials on terraform-managed cluster
+
+PGPASSWORD=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.password | base64decode}}')
+PGUSER=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.user | base64decode}}')
+PGDATABASE=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.dbname | base64decode}}')
+
+echo "user: $PGUSER"
+echo "password: $PGPASSWORD"
+echo "db name: $PGDATABASE"

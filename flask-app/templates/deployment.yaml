@@ -24,6 +24,17 @@ spec:
         name: {{ .Values.appLabel }}
         ports:
         - containerPort: {{ .Values.containerPort }}
+        env:
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef:
+              key: user
+              name: db-creds
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: db-creds
 
 ---
 

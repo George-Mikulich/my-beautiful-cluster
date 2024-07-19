@@ -1,0 +1,15 @@
+# The reason is crunchy PGO doesn't have a service to connect to psql.
+# What a shame
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-psql
+  labels:
+    app: pgo
+spec:
+  ports:
+  - port: 5432
+    name: http
+  selector:
+    postgres-operator.crunchydata.com/role: master
