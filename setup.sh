@@ -249,10 +249,6 @@ kubectl apply -f crunchy/cluster.yaml
 
 kubectl apply -f crunchy/custom-psql-svc.yaml -n postgres-operator
 
-PGPASSWORD=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.password | base64decode}}')
-kubectl create secret generic db-creds \
- --from-literal=user=hippo \
- --from-literal=password="$PGPASSWORD"
 echo "------------------------------------------------"
 echo "waiting for istio ingress"
 for (( ; ; ))
@@ -268,7 +264,8 @@ done
 #?
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 echo "To create DNS records we need Istio Ingress address, so we couldn't have done it earlier"
-gcloud container clusters get-credentials default-my-beautiful-cluster2-gke --zone us-west1-c
+
+kubectl config use-context gke_my-beautiful-cluster2_us-west1-c_default-my-beautiful-cluster2-gke
 sleep 5
 echo "IP address of Ingress: ${INGRESS_HOST}"
 echo "creating DNS zone and A records"
@@ -276,12 +273,10 @@ sed -i "s/[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*/${INGRESS_HOST}/" crossplane/cluster/dn
 kubectl apply -f crossplane/cluster/dns.yaml
 echo "------------------------------------------------"
 
-#ends with credentials on terraform-managed cluster
+kubectl config use-context gke_my-beautiful-cluster2_us-west1-c_gke-crossplane-cluster
+sleep 5
 
 PGPASSWORD=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.password | base64decode}}')
-PGUSER=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.user | base64decode}}')
-PGDATABASE=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go-template='{{.data.dbname | base64decode}}')
-
-echo "user: $PGUSER"
-echo "password: $PGPASSWORD"
-echo "db name: $PGDATABASE"
+kubectl create secret generic db-creds \
+ --from-literal=user=hippo \
+ --from-literal=password="$PGPASSWORD"

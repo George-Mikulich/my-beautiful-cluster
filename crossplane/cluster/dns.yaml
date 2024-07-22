@@ -19,7 +19,7 @@ spec:
     managedZone: managed-zone-app-george
     name: argocd.app-george.com.
     rrdatas:
-      - 34.82.198.198
+      - 35.247.25.231
     ttl: 300
     type: A
 
@@ -34,7 +34,7 @@ spec:
     managedZone: managed-zone-app-george
     name: my.app-george.com.
     rrdatas:
-      - 34.82.198.198
+      - 35.247.25.231
     ttl: 300
     type: A
 
@@ -49,6 +49,6 @@ spec:
     managedZone: managed-zone-app-george
     name: kiali.app-george.com.
     rrdatas:
-      - 34.82.198.198
+      - 35.247.25.231
     ttl: 300
     type: A

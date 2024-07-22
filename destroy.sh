@@ -4,7 +4,8 @@
 
 gcloud container clusters get-credentials default-my-beautiful-cluster2-gke --zone us-west1-c
 sleep 5
-kubectl delete nodepool gke-crossplane-np
+kubectl delete nodepool gke-crossplane-np &
+wait %1
 kubectl delete cluster gke-crossplane-cluster
 
 # terraform destroy must be applied manually
