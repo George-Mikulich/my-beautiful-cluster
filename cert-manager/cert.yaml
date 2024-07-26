@@ -12,3 +12,4 @@ spec:
   - argocd.app-george.com
   - my.app-george.com
   - kiali.app-george.com
+  - control.app-george.com

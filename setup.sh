@@ -183,7 +183,7 @@ do
         fi
 done
 
-kubectl apply -f argocd/custom-cm.yaml #-------this (what i could do: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml)
+# kubectl apply -f argocd/custom-cm.yaml  # okta server was deleted                                                   (what i could do: https://github.com/argoproj/argo-helm/blob/main/charts/argo-cd/values.yaml)
 echo "you need to edit deployment manually."
 echo "Add --insecure flag spec.template.spec.containers.args"
 echo "It should look like this:"
@@ -225,7 +225,9 @@ do
 done
 
 kubectl apply -f cert-manager/CIssuer.yaml
+sleep 5
 kubectl apply -f cert-manager/cert.yaml
+sleep 3
 
 kubectl apply -f argocd/gateway.yaml  #beautify????
 kubectl apply -f argocd/vS.yaml
@@ -280,3 +282,12 @@ PGPASSWORD=$(kubectl get secrets -n postgres-operator "hippo-pguser-hippo" -o go
 kubectl create secret generic db-creds \
  --from-literal=user=hippo \
  --from-literal=password="$PGPASSWORD"
+
+echo "-----------------------------"
+
+kubectl create namespace control
+sleep 5
+kubectl apply -f test/control-depl.yaml
+kubectl apply -f test/control-svc.yaml
+kubectl apply -f test/control-gate.yaml
+kubectl apply -f test/control-vS.yaml

@@ -52,3 +52,18 @@ spec:
       - 35.247.25.231
     ttl: 300
     type: A
+
+---
+
+apiVersion: dns.gcp.upbound.io/v1beta1
+kind: RecordSet
+metadata:
+  name: a-record-control
+spec:
+  forProvider:
+    managedZone: managed-zone-app-george
+    name: control.app-george.com.
+    rrdatas:
+      - 35.247.25.231
+    ttl: 300
+    type: A
